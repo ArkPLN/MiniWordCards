@@ -1,5 +1,10 @@
 # 小小词卡
 
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=flat&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.10+-0175C2?style=flat&logo=dart&logoColor=white)](https://dart.dev)
+[![License](https://img.shields.io/badge/License-Private-lightgrey?style=flat)](#)
+[![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20Windows-blue?style=flat)](#)
+
 English documentation: [README.md](README.md)
 
 小小词卡是一个基于 Flutter 的轻量学习工具，支持从 CSV 导入词典、检索单词，并通过翻卡进行记忆训练。
