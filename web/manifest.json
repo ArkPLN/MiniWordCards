@@ -1,11 +1,11 @@
 {
-    "name": "mini_word_cards",
-    "short_name": "mini_word_cards",
+    "name": "小小词卡",
+    "short_name": "小小词卡",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A compact flashcard app for vocabulary learning.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

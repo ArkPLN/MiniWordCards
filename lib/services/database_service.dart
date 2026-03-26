@@ -422,13 +422,11 @@ class DatabaseService {
   /// 获取启用词典中的单词总数
   Future<int> getEnabledWordCount() async {
     final db = await database;
-    final result = await db.rawQuery(
-      '''
+    final result = await db.rawQuery('''
       SELECT COUNT(*) as count FROM dictionary_words w
       JOIN dictionary_books b ON w.bookId = b.id
       WHERE b.enabled = 1
-    ''',
-    );
+    ''');
     return Sqflite.firstIntValue(result) ?? 0;
   }
 

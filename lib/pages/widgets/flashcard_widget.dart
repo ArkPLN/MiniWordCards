@@ -75,6 +75,15 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
   }
 
   Widget _buildFront(BuildContext context) {
+    final baseWordStyle = Theme.of(context).textTheme.headlineMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+    final baseMeaningStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      height: 1.35,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+
     return Card(
       elevation: 5,
       clipBehavior: Clip.antiAlias,
@@ -136,15 +145,13 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
                 child: _MaskedContent(
                   isMasked: _maskWord,
                   borderRadius: 12,
-                  child: Center(
-                    child: Text(
-                      widget.card.word,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
+                  child: _ScrollableAdaptiveText(
+                    text: widget.card.word,
+                    textAlign: TextAlign.center,
+                    baseStyle: baseWordStyle ?? const TextStyle(fontSize: 32),
+                    minFontSize: 18,
+                    maxCharsPerLineForBreak: 14,
+                    lengthScaleSteps: const [18, 32, 52],
                   ),
                 ),
               ),
@@ -156,15 +163,14 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
                 child: _MaskedContent(
                   isMasked: _maskMeaning,
                   borderRadius: 12,
-                  child: Center(
-                    child: Text(
-                      widget.card.meaning,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        height: 1.35,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
+                  child: _ScrollableAdaptiveText(
+                    text: widget.card.meaning,
+                    textAlign: TextAlign.left,
+                    baseStyle:
+                        baseMeaningStyle ?? const TextStyle(fontSize: 18),
+                    minFontSize: 13,
+                    maxCharsPerLineForBreak: 20,
+                    lengthScaleSteps: const [80, 160, 280],
                   ),
                 ),
               ),
@@ -308,5 +314,147 @@ class _MaskToggleChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ScrollableAdaptiveText extends StatefulWidget {
+  const _ScrollableAdaptiveText({
+    required this.text,
+    required this.baseStyle,
+    required this.minFontSize,
+    required this.maxCharsPerLineForBreak,
+    required this.lengthScaleSteps,
+    this.textAlign = TextAlign.left,
+  });
+
+  final String text;
+  final TextStyle baseStyle;
+  final double minFontSize;
+  final int maxCharsPerLineForBreak;
+  final List<int> lengthScaleSteps;
+  final TextAlign textAlign;
+
+  @override
+  State<_ScrollableAdaptiveText> createState() =>
+      _ScrollableAdaptiveTextState();
+}
+
+class _ScrollableAdaptiveTextState extends State<_ScrollableAdaptiveText> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final safeText = _softBreakLongRuns(
+      widget.text,
+      segmentLength: widget.maxCharsPerLineForBreak,
+    );
+    final scaledStyle = _scaledStyle(
+      baseStyle: widget.baseStyle,
+      rawLength: widget.text.length,
+      minFontSize: widget.minFontSize,
+      steps: widget.lengthScaleSteps,
+    );
+
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 120),
+          child: Text(
+            safeText,
+            textAlign: widget.textAlign,
+            softWrap: true,
+            style: scaledStyle,
+          ),
+        ),
+      ),
+    );
+  }
+
+  TextStyle _scaledStyle({
+    required TextStyle baseStyle,
+    required int rawLength,
+    required double minFontSize,
+    required List<int> steps,
+  }) {
+    final baseSize = baseStyle.fontSize ?? 16;
+    double size = baseSize;
+
+    for (var i = 0; i < steps.length; i++) {
+      if (rawLength > steps[i]) {
+        size -= (i == 0 ? 2 : 1.5);
+      }
+    }
+
+    if (size < minFontSize) {
+      size = minFontSize;
+    }
+
+    return baseStyle.copyWith(fontSize: size);
+  }
+
+  String _softBreakLongRuns(String text, {required int segmentLength}) {
+    final buffer = StringBuffer();
+    var runLength = 0;
+    const breakChars = {
+      ' ',
+      '\n',
+      '\t',
+      ',',
+      '.',
+      ';',
+      ':',
+      '!',
+      '?',
+      '(',
+      ')',
+      '{',
+      '}',
+      '[',
+      ']',
+      '/',
+      '\\',
+      '-',
+      '，',
+      '。',
+      '；',
+      '：',
+      '！',
+      '？',
+      '（',
+      '）',
+      '、',
+    };
+
+    for (final rune in text.runes) {
+      final char = String.fromCharCode(rune);
+      final isBreakable = breakChars.contains(char);
+
+      buffer.write(char);
+      runLength = isBreakable ? 0 : runLength + 1;
+
+      if (runLength >= segmentLength) {
+        // Insert a zero-width break opportunity for very long uninterrupted runs.
+        buffer.write('\u200B');
+        runLength = 0;
+      }
+    }
+
+    return buffer.toString();
   }
 }

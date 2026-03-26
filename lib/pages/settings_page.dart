@@ -154,7 +154,7 @@ class SettingsPage extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.info_outline),
       title: const Text('关于'),
-      subtitle: const Text('迷你单词卡 v1.0.0'),
+      subtitle: const Text('小小词卡 v1.0.0'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => _showAboutDialog(context),
     );
@@ -163,7 +163,7 @@ class SettingsPage extends StatelessWidget {
   void _showAboutDialog(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: '迷你单词卡',
+      applicationName: '小小词卡',
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(Icons.style, size: 48, color: Colors.blue),
       children: [
@@ -200,9 +200,9 @@ class SettingsPage extends StatelessWidget {
       mode: LaunchMode.externalApplication,
     );
     if (!success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('无法打开 GitHub 链接')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('无法打开 GitHub 链接')));
     }
   }
 }

@@ -449,10 +449,7 @@ class _WordCardsPageState extends State<WordCardsPage> {
           child: Column(
             children: [
               Expanded(
-                child: FlashcardWidget(
-                  key: ValueKey(card.id),
-                  card: card,
-                ),
+                child: FlashcardWidget(key: ValueKey(card.id), card: card),
               ),
               const SizedBox(height: 8),
               Text(
