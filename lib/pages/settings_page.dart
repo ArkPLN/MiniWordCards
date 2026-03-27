@@ -7,7 +7,15 @@ import '../services/settings_service.dart';
 /// 设置页面
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
-  static final Uri _githubUri = Uri.parse('https://github.com/ArkPLN/MiniWordCards');
+  static final Uri _githubUri = Uri.parse(
+    'https://github.com/ArkPLN/MiniWordCards',
+  );
+  static final Uri _sourceCetSatUri = Uri.parse(
+    'https://github.com/KyleBing/english-vocabulary',
+  );
+  static final Uri _sourceTemUri = Uri.parse(
+    'https://github.com/mikigo/english-chinese-words',
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +162,7 @@ class SettingsPage extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.info_outline),
       title: const Text('关于'),
-      subtitle: const Text('小小词卡 v1.0.0'),
+      subtitle: const Text('小小词卡 v1.1.0'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => _showAboutDialog(context),
     );
@@ -164,10 +172,10 @@ class SettingsPage extends StatelessWidget {
     showAboutDialog(
       context: context,
       applicationName: '小小词卡',
-      applicationVersion: '1.0.0',
+      applicationVersion: '1.1.0',
       applicationIcon: const Icon(Icons.style, size: 48, color: Colors.blue),
       children: [
-        const Text('一款简洁的单词卡片学习应用。(内部测试版)'),
+        const Text('一款简洁的单词卡片学习应用。'),
         const SizedBox(height: 16),
         const Text('功能特点：', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
@@ -180,12 +188,23 @@ class SettingsPage extends StatelessWidget {
           style: TextStyle(color: Colors.grey),
         ),
         const SizedBox(height: 12),
+        const Text('词库来源：', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        _LinkRow(
+          label: 'CET46/SAT: github.com/KyleBing/english-vocabulary',
+          onTap: () => _openUrl(context, _sourceCetSatUri),
+        ),
+        _LinkRow(
+          label: 'TEM4/8: github.com/mikigo/english-chinese-words',
+          onTap: () => _openUrl(context, _sourceTemUri),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             const FaIcon(FontAwesomeIcons.github, size: 18),
             const SizedBox(width: 8),
             TextButton(
-              onPressed: () => _openGithub(context),
+              onPressed: () => _openUrl(context, _githubUri),
               child: const Text('GitHub 项目地址'),
             ),
           ],
@@ -194,15 +213,39 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _openGithub(BuildContext context) async {
-    final success = await launchUrl(
-      _githubUri,
-      mode: LaunchMode.externalApplication,
-    );
+  Future<void> _openUrl(BuildContext context, Uri uri) async {
+    final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!success && context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('无法打开 GitHub 链接')));
+      ).showSnackBar(const SnackBar(content: Text('无法打开链接')));
     }
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.link, size: 16),
+        const SizedBox(width: 6),
+        Expanded(
+          child: TextButton(
+            onPressed: onTap,
+            style: TextButton.styleFrom(
+              alignment: Alignment.centerLeft,
+              padding: EdgeInsets.zero,
+            ),
+            child: Text(label),
+          ),
+        ),
+      ],
+    );
   }
 }
