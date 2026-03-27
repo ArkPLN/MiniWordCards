@@ -283,9 +283,9 @@ class _WordCardsPageState extends State<WordCardsPage> {
     await _ensureLoadedUntil(index);
     if (!mounted) return;
     if (index >= _sessionCards.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('目标卡片尚未加载完成，请稍后重试')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('目标卡片尚未加载完成，请稍后重试')));
       return;
     }
 
@@ -325,10 +325,7 @@ class _WordCardsPageState extends State<WordCardsPage> {
                 child: FilledButton.icon(
                   onPressed: _startSession,
                   icon: const Icon(Icons.play_arrow, size: 16),
-                  label: const Text(
-                    '开始本轮',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                  label: const Text('开始本轮', style: TextStyle(fontSize: 12)),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,

@@ -502,5 +502,3 @@ class _ScrollableAdaptiveTextState extends State<_ScrollableAdaptiveText> {
     return painter.size.height > maxHeight;
   }
 }
-
-
