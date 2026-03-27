@@ -471,18 +471,38 @@ class DatabaseService {
   Future<List<DictionaryWord>> getEnabledWordsPaged({
     required int offset,
     required int limit,
+    int? randomSeed,
   }) async {
     final db = await database;
-    final maps = await db.rawQuery(
-      '''
-      SELECT w.* FROM dictionary_words w
-      JOIN dictionary_books b ON w.bookId = b.id
-      WHERE b.enabled = 1
-      ORDER BY w.bookId ASC, w.wordId ASC
-      LIMIT ? OFFSET ?
-    ''',
-      [limit, offset],
-    );
+
+    final List<Map<String, dynamic>> maps;
+    if (randomSeed == null) {
+      maps = await db.rawQuery(
+        '''
+        SELECT w.* FROM dictionary_words w
+        JOIN dictionary_books b ON w.bookId = b.id
+        WHERE b.enabled = 1
+        ORDER BY w.bookId ASC, w.wordId ASC
+        LIMIT ? OFFSET ?
+      ''',
+        [limit, offset],
+      );
+    } else {
+      // Use a stable pseudo-random ordering based on seed + primary key.
+      // This keeps lazy-loading batches deterministic within one session.
+      maps = await db.rawQuery(
+        '''
+        SELECT w.* FROM dictionary_words w
+        JOIN dictionary_books b ON w.bookId = b.id
+        WHERE b.enabled = 1
+        ORDER BY ((w.bookId * 73856093 + w.wordId * 19349663 + ?) % 2147483647) ASC,
+                 w.bookId ASC,
+                 w.wordId ASC
+        LIMIT ? OFFSET ?
+      ''',
+        [randomSeed, limit, offset],
+      );
+    }
     return _mapToWords(maps);
   }
 

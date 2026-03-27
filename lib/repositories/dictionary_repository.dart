@@ -440,8 +440,13 @@ class DictionaryRepository {
   Future<List<DictionaryWord>> getEnabledWordsPaged({
     required int offset,
     required int limit,
+    int? randomSeed,
   }) async {
-    return _db.getEnabledWordsPaged(offset: offset, limit: limit);
+    return _db.getEnabledWordsPaged(
+      offset: offset,
+      limit: limit,
+      randomSeed: randomSeed,
+    );
   }
 }
 

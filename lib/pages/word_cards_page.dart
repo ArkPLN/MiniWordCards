@@ -37,6 +37,7 @@ class _WordCardsPageState extends State<WordCardsPage> {
   int _totalEnabledWords = 0;
   int _targetSessionCount = 0;
   int _loadedOffset = 0;
+  int _sessionRandomSeed = 0;
 
   bool _lazyLoadOptimizationEnabled = true;
   bool _useLazyLoad = false;
@@ -105,12 +106,15 @@ class _WordCardsPageState extends State<WordCardsPage> {
     final targetCount = _config.mode == FlashcardStudyMode.free
         ? _totalEnabledWords
         : boundedFixedCount;
+    // Each new session uses a fresh seed so "随机重排" can generate a new order.
+    final nextSessionSeed = _random.nextInt(1 << 30);
 
     setState(() {
       _targetSessionCount = _totalEnabledWords == 0 ? 0 : targetCount;
       _sessionCards = [];
       _currentIndex = 0;
       _loadedOffset = 0;
+      _sessionRandomSeed = nextSessionSeed;
       _visitedIndexes.clear();
       _errorText = null;
     });
@@ -163,6 +167,7 @@ class _WordCardsPageState extends State<WordCardsPage> {
       final words = await _repository.getEnabledWordsPaged(
         offset: _loadedOffset,
         limit: limit,
+        randomSeed: _sessionRandomSeed,
       );
       if (!mounted) return;
 
@@ -226,10 +231,112 @@ class _WordCardsPageState extends State<WordCardsPage> {
     await _maybePrefetchNextBatch(index);
   }
 
+  Future<void> _showJumpDialog() async {
+    if (_config.mode != FlashcardStudyMode.free || _targetSessionCount == 0) {
+      return;
+    }
+
+    final controller = TextEditingController(text: '${_currentIndex + 1}');
+    final target = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('跳转到指定卡片'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '输入 1 - $_targetSessionCount',
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              Navigator.pop(context, value);
+            },
+            child: const Text('跳转'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || target == null) return;
+
+    final index = target - 1;
+    if (index < 0 || index >= _targetSessionCount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('请输入 1 - $_targetSessionCount 的数字')),
+      );
+      return;
+    }
+
+    await _jumpToCard(index);
+  }
+
+  Future<void> _jumpToCard(int index) async {
+    await _ensureLoadedUntil(index);
+    if (!mounted) return;
+    if (index >= _sessionCards.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('目标卡片尚未加载完成，请稍后重试')),
+      );
+      return;
+    }
+
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(index);
+      return;
+    }
+    await _onPageChanged(index);
+  }
+
+  Future<void> _ensureLoadedUntil(int index) async {
+    if (!_useLazyLoad) return;
+    if (index < _sessionCards.length) return;
+
+    // Load additional batches until the target index is available.
+    while (mounted &&
+        index >= _sessionCards.length &&
+        _sessionCards.length < _targetSessionCount) {
+      final before = _sessionCards.length;
+      await _loadMoreCards();
+      if (_sessionCards.length == before) {
+        break;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isFixedMode = _config.mode == FlashcardStudyMode.fixedCount;
+
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: isFixedMode ? 108 : null,
+        leading: isFixedMode
+            ? Padding(
+                padding: const EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                child: FilledButton.icon(
+                  onPressed: _startSession,
+                  icon: const Icon(Icons.play_arrow, size: 16),
+                  label: const Text(
+                    '开始本轮',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              )
+            : null,
         title: const Text('单词卡'),
         actions: [
           IconButton(
@@ -320,51 +427,85 @@ class _WordCardsPageState extends State<WordCardsPage> {
           ),
           const SizedBox(height: 10),
           if (showFixedControls)
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'N = ${_config.fixedCount}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _config.fixedCount > 1
-                      ? () => _setFixedCount(_config.fixedCount - 1)
-                      : null,
-                  icon: const Icon(Icons.remove_circle_outline),
-                  tooltip: '减少',
-                ),
-                IconButton(
-                  onPressed: _config.fixedCount < maxCount
-                      ? () => _setFixedCount(_config.fixedCount + 1)
-                      : null,
-                  icon: const Icon(Icons.add_circle_outline),
-                  tooltip: '增加',
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, right: 8),
-                  child: Text('上限 $maxCount'),
-                ),
-                FilledButton.icon(
-                  onPressed: _startSession,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('开始本轮'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'N = ${_config.fixedCount}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _config.fixedCount > 1
+                          ? () => _setFixedCount(_config.fixedCount - 1)
+                          : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 32,
+                        height: 32,
+                      ),
+                      padding: EdgeInsets.zero,
+                      tooltip: '减少',
+                    ),
+                    IconButton(
+                      onPressed: _config.fixedCount < maxCount
+                          ? () => _setFixedCount(_config.fixedCount + 1)
+                          : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 32,
+                        height: 32,
+                      ),
+                      padding: EdgeInsets.zero,
+                      tooltip: '增加',
+                    ),
+                    Text(
+                      '上限 $maxCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           if (!showFixedControls)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _startSession,
-                icon: const Icon(Icons.shuffle),
-                label: const Text('随机重排'),
-              ),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _showJumpDialog,
+                  icon: const Icon(Icons.pin_outlined),
+                  label: const Text('跳转'),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _startSession,
+                  icon: const Icon(Icons.shuffle),
+                  label: const Text('随机重排'),
+                ),
+              ],
             ),
         ],
       ),
