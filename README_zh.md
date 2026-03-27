@@ -5,9 +5,9 @@
 [![License](https://img.shields.io/badge/License-Private-lightgrey?style=flat)](#)
 [![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20Windows-blue?style=flat)](#)
 
-English documentation: [README.md](README.md)
+English documentation: [README.md](./README.md)
 
-小小词卡是一个基于 Flutter 的轻量学习工具，支持从 CSV 导入词典、检索单词，并通过翻卡进行记忆训练。
+小小词卡是一个基于 Flutter 的轻量学习工具，支持从 CSV 导入词典、检索单词，并通过翻卡进行记忆训练，项目设计最初是为了便于快速掌握那些“小众”，不易在主流背单词APP上检索、导入、翻阅的单词，致力于做一个小而美的单词卡APP。
 
 ## 功能概览
 
@@ -27,7 +27,6 @@ English documentation: [README.md](README.md)
 - 设置项：
   - 主题模式
   - 懒加载优化开关（默认开启，自动记忆）
-  - GitHub 入口（设置 -> 关于）
 
 ## 项目结构
 
@@ -66,6 +65,7 @@ flutter build apk --release --target-platform android-arm64
 
 ## CSV 字段建议
 
+- `index`
 - `word`
 - `meaning`
 - `abbreviation`（可选）
@@ -76,3 +76,12 @@ flutter build apk --release --target-platform android-arm64
   - 先结束残留 `dart/flutter` 进程，再删除 lock 文件后重试。
 - Android 构建报 AAR metadata / AGP 兼容问题
   - 使用当前仓库中已配置的 Android 构建链（AGP 8.9.1）。
+
+## 路线图
+
+我们会持续改进软件质量，提供更实用的功能，并保持“小而美”的产品方向。欢迎提交 PR 和建议。
+
+- [x] v1.0.0 核心功能：CSV 单词本导入、单词卡、词典管理
+- [ ] v1.1.0 格式扩展：支持 JSON 格式单词本
+- [ ] v1.2.0 联网搜索：接入 FreeDictionary API
+- [ ] v2.0.0 样式优化：初步自定义主题并优化 UI

@@ -7,7 +7,7 @@
 
 Chinese documentation: [README_zh.md](./README_zh.md)
 
-Mini Word Cards is a lightweight Flutter app for vocabulary learning. It supports CSV dictionary import, fast lookup, and poker-style flashcard for review sessions.
+Mini Word Cards is a lightweight Flutter app for vocabulary learning. It supports CSV dictionary import, fast lookup, and flashcard-based review sessions. It was designed for niche vocabularies that are hard to find or import in mainstream vocabulary apps, while keeping the product compact and focused.
 
 ## Features
 
@@ -27,7 +27,6 @@ Mini Word Cards is a lightweight Flutter app for vocabulary learning. It support
 - Settings:
   - Theme mode
   - Lazy-load optimization toggle (enabled by default, persisted)
-  - GitHub entry (Settings -> About)
 
 ## Project Structure
 
@@ -66,6 +65,7 @@ flutter build apk --release --target-platform android-arm64
 
 ## Recommended CSV Fields
 
+- `index`
 - `word`
 - `meaning`
 - `abbreviation` (optional)
@@ -77,3 +77,11 @@ flutter build apk --release --target-platform android-arm64
 - Android AAR metadata / AGP compatibility errors
   - Keep the Android toolchain in this repo (AGP 8.9.1).
 
+## Roadmap
+
+We will keep improving software quality and ship practical features while preserving the "small but polished" product direction. PRs and suggestions are welcome.
+
+- [x] v1.0.0 Core features: CSV import, flashcards, dictionary management
+- [ ] v1.1.0 Format expansion: JSON dictionary import
+- [ ] v1.2.0 Online search: FreeDictionary API integration
+- [ ] v2.0.0 UI refinement: initial custom themes and UI improvements
