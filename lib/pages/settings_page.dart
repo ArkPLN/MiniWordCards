@@ -7,7 +7,7 @@ import '../services/settings_service.dart';
 /// 设置页面
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
-  static final Uri _githubUri = Uri.parse('https://github.com/ArkPLN');
+  static final Uri _githubUri = Uri.parse('https://github.com/ArkPLN/MiniWordCards');
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +186,7 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(width: 8),
             TextButton(
               onPressed: () => _openGithub(context),
-              child: const Text('ArkPLN'),
+              child: const Text('GitHub 项目地址'),
             ),
           ],
         ),
