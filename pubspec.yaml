@@ -3,9 +3,9 @@ description: "A compact bilingual flashcard app for custom CSV dictionaries and 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-homepage: https://github.com/ArkPLN/mini_word_cards
-repository: https://github.com/ArkPLN/mini_word_cards
-issue_tracker: https://github.com/ArkPLN/mini_word_cards/issues
+homepage: https://github.com/ArkPLN/MiniWordCards
+repository: https://github.com/ArkPLN/MiniWordCards
+issue_tracker: https://github.com/ArkPLN/MiniWordCards/issues
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -75,6 +75,11 @@ flutter:
 
   assets:
     - lib/data/default.csv
+    - lib/data/cet4/
+    - lib/data/cet6/
+    - lib/data/tem4/
+    - lib/data/tem8/
+    - lib/data/sat/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

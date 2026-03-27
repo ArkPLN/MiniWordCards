@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../dto/builtin_dictionary.dart';
 import '../dto/dictionary.dart';
 import '../repositories/dictionary_repository.dart';
 import '../services/settings_service.dart';
@@ -15,6 +16,7 @@ class BookManagePage extends StatefulWidget {
 
 class _BookManagePageState extends State<BookManagePage> {
   final DictionaryRepository _repository = DictionaryRepository();
+  late final List<BuiltinDictionary> _builtinDictionaries;
   List<DictionaryBook> _books = [];
   Map<String, dynamic> _stats = {};
   bool _isLoading = true;
@@ -22,6 +24,7 @@ class _BookManagePageState extends State<BookManagePage> {
   @override
   void initState() {
     super.initState();
+    _builtinDictionaries = _repository.getBuiltinDictionaries();
     _loadData();
   }
 
@@ -55,6 +58,89 @@ class _BookManagePageState extends State<BookManagePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
+      }
+    }
+  }
+
+  Future<void> _importAllBuiltinsSequentially() async {
+    try {
+      final ids = _builtinDictionaries
+          .where((e) => e.id != 'default')
+          .map((e) => e.id)
+          .toList();
+      await _repository.importBuiltinDictionariesSequentially(ids);
+      await _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('内置词库已按顺序导入')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
+      }
+    }
+  }
+
+  Future<void> _toggleBuiltinImport(
+    BuiltinDictionary builtin,
+    bool shouldImport,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final settings = context.read<SettingsService>();
+
+    if (shouldImport) {
+      try {
+        await _repository.importBuiltinDictionary(builtin.id);
+        await _loadData();
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('已导入内置词库：${builtin.name}')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          messenger.showSnackBar(SnackBar(content: Text('导入失败: $e')));
+        }
+      }
+      return;
+    }
+
+    final existedBook = await _repository.getDictionaryBookByUrl(
+      builtin.assetPath,
+    );
+    if (existedBook == null) return;
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认移除内置词库'),
+        content: Text('确定要移除 "${builtin.name}" 吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('移除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await settings.addDeletedDictionaryUrl(existedBook.url);
+      await _repository.deleteDictionaryBook(existedBook.id);
+      await _loadData();
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('已移除内置词库：${builtin.name}')),
+        );
       }
     }
   }
@@ -293,20 +379,107 @@ class _BookManagePageState extends State<BookManagePage> {
   }
 
   Widget _buildBody() {
+    final externalBooks = _books
+        .where((book) => !_repository.isBuiltinDictionaryUrl(book.url))
+        .toList();
+
     return Column(
       children: [
         _buildStatsCard(),
         Expanded(
-          child: _books.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _books.length,
-                  itemBuilder: (context, index) =>
-                      _buildBookCard(_books[index]),
-                ),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildBuiltinSection(),
+              const SizedBox(height: 16),
+              _buildExternalSection(externalBooks),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBuiltinSection() {
+    final importedUrls = _books.map((e) => e.url).toSet();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '内置词库',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _importAllBuiltinsSequentially,
+                  icon: const Icon(Icons.playlist_add_check),
+                  label: const Text('按顺序导入'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '首次启动仅自动导入默认词库，其他内置词库可在此勾选导入/移除。',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ..._builtinDictionaries.map((builtin) {
+              final imported = importedUrls.contains(builtin.assetPath);
+              return SwitchListTile(
+                value: imported,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(builtin.name),
+                subtitle: Text(
+                  '${builtin.category.toUpperCase()} · ${builtin.variant.toUpperCase()}\n${builtin.description}',
+                ),
+                onChanged: (value) => _toggleBuiltinImport(builtin, value),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExternalSection(List<DictionaryBook> externalBooks) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '外部导入词典',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Text('${externalBooks.length} 个'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (externalBooks.isEmpty)
+              _buildEmptyState()
+            else
+              ...externalBooks.map(_buildBookCard),
+          ],
+        ),
+      ),
     );
   }
 
@@ -370,16 +543,13 @@ class _BookManagePageState extends State<BookManagePage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.book_outlined, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text(
-            '暂无词典',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
-          ),
+          const Icon(Icons.book_outlined, size: 40, color: Colors.grey),
+          const SizedBox(height: 8),
+          const Text('暂无外部词典', style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 8),
           TextButton.icon(
             onPressed: _importCsv,

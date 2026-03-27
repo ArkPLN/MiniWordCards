@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../dto/flashcard.dart';
 import '../repositories/dictionary_repository.dart';
 import '../services/settings_service.dart';
-import 'widgets/flashcard_widget.dart';
+import 'flashcard_widget.dart';
 
 /// 单词卡页面
 class WordCardsPage extends StatefulWidget {

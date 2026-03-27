@@ -409,6 +409,19 @@ class DatabaseService {
     return DictionaryBook.fromMap(result.first);
   }
 
+  /// 按 URL 获取词典书信息
+  Future<DictionaryBook?> getDictionaryBookByUrl(String url) async {
+    final db = await database;
+    final result = await db.query(
+      'dictionary_books',
+      where: 'url = ?',
+      whereArgs: [url],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return DictionaryBook.fromMap(result.first);
+  }
+
   /// 获取词典书的单词数量
   Future<int> getWordCount(int bookId) async {
     final db = await database;

@@ -19,6 +19,11 @@ Mini Word Cards is a lightweight Flutter app for vocabulary learning. It support
   - Free review
   - N cards per session
 - Automatic lazy loading for large datasets (>300 words)
+- Built-in dictionaries (managed separately from external imports):
+  - CET-4 / CET-6
+  - TEM-4 (full/core/hot), TEM-8 (full/core/hot)
+  - SAT (full)
+  - First launch imports `default.csv` only; other built-in dictionaries can be imported/removed in Dictionary Management
 - Local dictionary management:
   - Import CSV
   - Enable/disable dictionaries
@@ -70,6 +75,19 @@ flutter build apk --release --target-platform android-arm64
 - `meaning`
 - `abbreviation` (optional)
 
+## Default Dictionary
+
+- `lib/data/default.csv`
+- Loaded on first launch only
+- Intended as a lightweight starter dictionary for quick verification and onboarding
+
+## Dictionary Sources
+
+- CET-4/CET-6/SAT vocabularies are sourced from:  
+  https://github.com/KyleBing/english-vocabulary
+- TEM-4/TEM-8 vocabularies are sourced from:  
+  https://github.com/mikigo/english-chinese-words
+
 ## Troubleshooting
 
 - `Could not acquire the lock to .dart_tool/.../.lock`
@@ -82,6 +100,7 @@ flutter build apk --release --target-platform android-arm64
 We will keep improving software quality and ship practical features while preserving the "small but polished" product direction. PRs and suggestions are welcome.
 
 - [x] v1.0.0 Core features: CSV import, flashcards, dictionary management
-- [ ] v1.1.0 Format expansion: JSON dictionary import
-- [ ] v1.2.0 Online search: FreeDictionary API integration
+- [x] v1.1.0 Built-in dictionaries: support CET-4/6, TEM-4/8, SAT packs with managed import/remove
+- [ ] v1.2.0 Format expansion: JSON dictionary import
+- [ ] v1.3.0 Online search: FreeDictionary API integration
 - [ ] v2.0.0 UI refinement: initial custom themes and UI improvements

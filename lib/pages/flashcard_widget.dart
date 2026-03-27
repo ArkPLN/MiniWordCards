@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../dto/flashcard.dart';
+import '../dto/flashcard.dart';
 
 class FlashcardWidget extends StatefulWidget {
   const FlashcardWidget({super.key, required this.card, this.onFaceChanged});
@@ -367,22 +367,47 @@ class _ScrollableAdaptiveTextState extends State<_ScrollableAdaptiveText> {
       steps: widget.lengthScaleSteps,
     );
 
-    return Scrollbar(
-      controller: _scrollController,
-      thumbVisibility: true,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 120),
-          child: Text(
-            safeText,
-            textAlign: widget.textAlign,
-            softWrap: true,
-            style: scaledStyle,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final needsScroll = _needsScroll(
+          text: safeText,
+          style: scaledStyle,
+          maxWidth: constraints.maxWidth - 16,
+          maxHeight: constraints.maxHeight - 12,
+        );
+
+        if (!needsScroll) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Align(
+              alignment: widget.textAlign == TextAlign.center
+                  ? Alignment.center
+                  : Alignment.topLeft,
+              child: Text(
+                safeText,
+                textAlign: widget.textAlign,
+                softWrap: true,
+                style: scaledStyle,
+              ),
+            ),
+          );
+        }
+
+        return Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Text(
+              safeText,
+              textAlign: widget.textAlign,
+              softWrap: true,
+              style: scaledStyle,
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -457,4 +482,25 @@ class _ScrollableAdaptiveTextState extends State<_ScrollableAdaptiveText> {
 
     return buffer.toString();
   }
+
+  bool _needsScroll({
+    required String text,
+    required TextStyle style,
+    required double maxWidth,
+    required double maxHeight,
+  }) {
+    if (maxWidth <= 0 || maxHeight <= 0 || maxHeight.isInfinite) {
+      return false;
+    }
+
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textAlign: widget.textAlign,
+    )..layout(maxWidth: maxWidth);
+
+    return painter.size.height > maxHeight;
+  }
 }
+
+

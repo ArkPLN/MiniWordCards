@@ -19,6 +19,11 @@ English documentation: [README.md](./README.md)
   - 自由翻阅
   - 一次 N 张
 - 大词库自动懒加载（>300 条时按批次加载）
+- 内置词库（与外部导入词典分开管理）：
+  - 大学英语四级 / 六级
+  - 专四 / 专八（full/core/hot）
+  - SAT（full）
+  - 首次启动仅自动导入 `default.csv`，其余内置词库可在词典管理页勾选导入/删除
 - 本地词典管理：
   - 导入 CSV
   - 启用/禁用词典
@@ -65,10 +70,23 @@ flutter build apk --release --target-platform android-arm64
 
 ## CSV 字段建议
 
-- `index`
-- `word`
-- `meaning`
-- `abbreviation`（可选）
+- `index`:序号
+- `word`:单词
+- `meaning`:释义
+- `abbreviation`:缩写（可选）
+
+## 默认词库
+
+- `lib/data/default.csv`
+- 仅首次启动时自动导入
+- 用于快速验证与上手体验的轻量默认词库
+
+## 词库来源说明
+
+- CET4/CET6/SAT 词汇来源：  
+  https://github.com/KyleBing/english-vocabulary
+- TEM4/TEM8 词汇来源：  
+  https://github.com/mikigo/english-chinese-words
 
 ## 常见问题
 
@@ -82,6 +100,7 @@ flutter build apk --release --target-platform android-arm64
 我们会持续改进软件质量，提供更实用的功能，并保持“小而美”的产品方向。欢迎提交 PR 和建议。
 
 - [x] v1.0.0 核心功能：CSV 单词本导入、单词卡、词典管理
-- [ ] v1.1.0 格式扩展：支持 JSON 格式单词本
-- [ ] v1.2.0 联网搜索：接入 FreeDictionary API
+- [x] v1.1.0 支持内置词库：内置 CET4/6、TEM4/8、SAT，并支持管理页导入/删除
+- [ ] v1.2.0 格式扩展：支持 JSON 格式单词本
+- [ ] v1.3.0 联网搜索：接入 FreeDictionary API
 - [ ] v2.0.0 样式优化：初步自定义主题并优化 UI

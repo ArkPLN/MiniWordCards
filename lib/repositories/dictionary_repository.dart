@@ -1,5 +1,6 @@
 import 'package:path/path.dart' as p;
 
+import '../dto/builtin_dictionary.dart';
 import '../dto/dictionary.dart';
 import '../services/csv_dictionary_codec_service.dart';
 import '../services/database_service.dart';
@@ -24,6 +25,89 @@ class DictionaryRepository {
   final CsvDictionaryCodecService _csvCodecService;
   final DeletedDictionaryStore _deletedDictionaryStore;
 
+  static const List<BuiltinDictionary> _builtinDictionaries = [
+    BuiltinDictionary(
+      id: 'default',
+      name: '默认词库',
+      assetPath: 'lib/data/default.csv',
+      category: 'Default',
+      variant: 'full',
+      description: '应用首次启动自动导入的基础词库',
+    ),
+    BuiltinDictionary(
+      id: 'cet4-full',
+      name: '大学英语四级 (CET-4)',
+      assetPath: 'lib/data/cet4/cet4.csv',
+      category: 'CET-4',
+      variant: 'full',
+      description: '大学英语四级全量词汇词库',
+    ),
+    BuiltinDictionary(
+      id: 'cet6-full',
+      name: '大学英语六级 (CET-6)',
+      assetPath: 'lib/data/cet6/cet6.csv',
+      category: 'CET-6',
+      variant: 'full',
+      description: '大学英语六级全量词汇词库',
+    ),
+    BuiltinDictionary(
+      id: 'tem4-full',
+      name: '专四词库 (TEM-4 Full)',
+      assetPath: 'lib/data/tem4/tem4-full.csv',
+      category: 'TEM-4',
+      variant: 'full',
+      description: '专四全词库',
+    ),
+    BuiltinDictionary(
+      id: 'tem4-core',
+      name: '专四词库 (TEM-4 Core)',
+      assetPath: 'lib/data/tem4/tem4-core.csv',
+      category: 'TEM-4',
+      variant: 'core',
+      description: '专四核心词库',
+    ),
+    BuiltinDictionary(
+      id: 'tem4-hot',
+      name: '专四词库 (TEM-4 Hot)',
+      assetPath: 'lib/data/tem4/tem4-hot.csv',
+      category: 'TEM-4',
+      variant: 'hot',
+      description: '专四真题高频核心词',
+    ),
+    BuiltinDictionary(
+      id: 'tem8-full',
+      name: '专八词库 (TEM-8 Full)',
+      assetPath: 'lib/data/tem8/tem8-full.csv',
+      category: 'TEM-8',
+      variant: 'full',
+      description: '专八全词库',
+    ),
+    BuiltinDictionary(
+      id: 'tem8-core',
+      name: '专八词库 (TEM-8 Core)',
+      assetPath: 'lib/data/tem8/tem8-core.csv',
+      category: 'TEM-8',
+      variant: 'core',
+      description: '专八核心词库',
+    ),
+    BuiltinDictionary(
+      id: 'tem8-hot',
+      name: '专八词库 (TEM-8 Hot)',
+      assetPath: 'lib/data/tem8/tem8-hot.csv',
+      category: 'TEM-8',
+      variant: 'hot',
+      description: '专八真题高频核心词',
+    ),
+    BuiltinDictionary(
+      id: 'sat-full',
+      name: 'SAT 词库 (Full)',
+      assetPath: 'lib/data/sat/sat.csv',
+      category: 'SAT',
+      variant: 'full',
+      description: 'SAT 全词库',
+    ),
+  ];
+
   /// 初始化默认词典
   /// [deletedUrls] 已删除词典的 URL 集合，这些词典不会被自动导入
   Future<void> initDefaultDictionary({Set<String>? deletedUrls}) async {
@@ -47,6 +131,53 @@ class DictionaryRepository {
       name: '纳米材料词典',
       comment: '纳米生物材料相关术语',
     );
+  }
+
+  List<BuiltinDictionary> getBuiltinDictionaries() {
+    return List.unmodifiable(_builtinDictionaries);
+  }
+
+  bool isBuiltinDictionaryUrl(String url) {
+    return _builtinDictionaries.any((item) => item.assetPath == url);
+  }
+
+  BuiltinDictionary? getBuiltinDictionaryByAssetPath(String assetPath) {
+    for (final item in _builtinDictionaries) {
+      if (item.assetPath == assetPath) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<int?> importBuiltinDictionary(String id) async {
+    BuiltinDictionary? builtin;
+    for (final item in _builtinDictionaries) {
+      if (item.id == id) {
+        builtin = item;
+        break;
+      }
+    }
+    if (builtin == null) {
+      throw Exception('内置词库不存在: $id');
+    }
+
+    if (await _db.isDictionaryBookExists(builtin.assetPath)) {
+      final existed = await _db.getDictionaryBookByUrl(builtin.assetPath);
+      return existed?.id;
+    }
+
+    return importCsvFromAssets(
+      assetPath: builtin.assetPath,
+      name: builtin.name,
+      comment: builtin.description,
+    );
+  }
+
+  Future<void> importBuiltinDictionariesSequentially(List<String> ids) async {
+    for (final id in ids) {
+      await importBuiltinDictionary(id);
+    }
   }
 
   /// 从 assets 导入 CSV 词典
@@ -191,6 +322,10 @@ class DictionaryRepository {
 
   Future<DictionaryBook?> getDictionaryBook(int bookId) async {
     return _db.getDictionaryBook(bookId);
+  }
+
+  Future<DictionaryBook?> getDictionaryBookByUrl(String url) async {
+    return _db.getDictionaryBookByUrl(url);
   }
 
   Future<void> updateBookComment(int bookId, String comment) async {
